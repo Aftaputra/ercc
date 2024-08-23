@@ -1,0 +1,33 @@
+name: ercc
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: ^2.0.10+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/home_active.svg
+    - assets/home_idle.svg
+    - assets/stats_active.svg
+    - assets/stats_idle.svg
+    - assets/tune_active.svg
+    - assets/tune_idle.svg
+    - assets/etc_active.svg
+    - assets/etc_idle.svg
+    - assets/db_appbar.png
+    - assets/sts_appbar.png
+    - assets/tune_appbar.png
