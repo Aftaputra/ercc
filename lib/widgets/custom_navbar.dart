@@ -14,30 +14,55 @@ class CustomNavBar extends StatelessWidget {
       backgroundColor: Colors.white,
       currentIndex: currentIndex,
       onTap: onTap,
+      showSelectedLabels: false,
+      showUnselectedLabels: false,
+      elevation: 0,
+      selectedIconTheme: IconThemeData(size: 24),
+      unselectedIconTheme: IconThemeData(size: 24),
       items: [
         BottomNavigationBarItem(
-          icon: SvgPicture.asset(
-            currentIndex == 0 ? 'assets/home_active.svg' : 'assets/home_idle.svg',
+          icon: GestureDetector(
+            behavior: HitTestBehavior.opaque, // Disable feedback
+            child: SvgPicture.asset(
+              'assets/home_${currentIndex == 0 ? 'active' : 'idle'}.svg',
+              width: 24,
+              height: 24,
+            ),
           ),
-          label: 'Dashboard',
+          label: '',
         ),
         BottomNavigationBarItem(
-          icon: SvgPicture.asset(
-            currentIndex == 1 ? 'assets/stats_active.svg' : 'assets/stats_idle.svg',
+          icon: GestureDetector(
+            behavior: HitTestBehavior.opaque, // Disable feedback
+            child: SvgPicture.asset(
+              'assets/stats_${currentIndex == 1 ? 'active' : 'idle'}.svg',
+              width: 24,
+              height: 24,
+            ),
           ),
-          label: 'Stats',
+          label: '',
         ),
         BottomNavigationBarItem(
-          icon: SvgPicture.asset(
-            currentIndex == 2 ? 'assets/tune_active.svg' : 'assets/tune_idle.svg',
+          icon: GestureDetector(
+            behavior: HitTestBehavior.opaque, // Disable feedback
+            child: SvgPicture.asset(
+              'assets/tune_${currentIndex == 2 ? 'active' : 'idle'}.svg',
+              width: 24,
+              height: 24,
+            ),
           ),
-          label: 'Tune',
+          label: '',
         ),
         BottomNavigationBarItem(
-          icon: SvgPicture.asset(
-            currentIndex == 3 ? 'assets/etc_active.svg' : 'assets/etc_idle.svg',
+          icon: GestureDetector(
+            behavior: HitTestBehavior.opaque, // Disable feedback
+            child: SvgPicture.asset(
+              'assets/etc_${currentIndex == 3 ? 'active' : 'idle'}.svg',
+              width: 24,
+              height: 24,
+            ),
           ),
-          label: 'Etc',
+          label: '',
         ),
       ],
     );

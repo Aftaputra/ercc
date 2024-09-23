@@ -7,9 +7,14 @@ environment:
   sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
+  firebase_core: ^2.24.2
+  fl_chart: ^0.69.0
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+  http: ^1.2.2
+  percent_indicator: ^4.2.3
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +36,5 @@ flutter:
     - assets/db_appbar.png
     - assets/sts_appbar.png
     - assets/tune_appbar.png
+    - assets/about.jpg
+    - assets/bg_img.jpg
