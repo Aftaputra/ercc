@@ -117,7 +117,7 @@ class _StatsPageState extends State<StatsPage> {
                                       return Padding(
                                         padding: const EdgeInsets.only(top: 8.0),
                                         child: Text(
-                                          '${(value.toInt() * 10).toString().padLeft(2, '0')}',
+                                          '${(value.toInt() * 10).toString().padLeft(2)}',
                                           style: const TextStyle(fontSize: 12),
                                         ),
                                       );
