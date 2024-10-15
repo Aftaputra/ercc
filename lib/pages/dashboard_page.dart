@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   final double level;
   final int amperage;
   final String batteryHealth;
@@ -15,6 +15,41 @@ class DashboardPage extends StatelessWidget {
     required this.voltage,
     required this.temperature,
   });
+
+  @override
+  _DashboardPageState createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
+  bool isCooling = false; // Status tombol Cooler (Idle atau Cooling)
+  late AnimationController _controller; // Controller untuk animasi rotasi
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose(); // Hentikan controller saat widget dibuang
+    super.dispose();
+  }
+
+  void _toggleCooling() {
+    setState(() {
+      isCooling = !isCooling;
+      if (isCooling) {
+        _controller.repeat(); // Mulai animasi berputar
+      } else {
+        _controller.stop(); // Hentikan animasi
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +70,11 @@ class DashboardPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '${(level * 100).toStringAsFixed(0)}% - Idle',
+                  isCooling
+                      ? '${(widget.level * 100).toStringAsFixed(0)}% - Cooling'
+                      : '${(widget.level * 100).toStringAsFixed(0)}% - Idle',
                   style: TextStyle(
+                    color: isCooling ? Colors.blue : Colors.black,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -54,14 +92,15 @@ class DashboardPage extends StatelessWidget {
                   reverse: true,
                   radius: 38.0, // Setengah dari 76px
                   lineWidth: 10.0, // Sesuaikan dengan ketebalan lingkaran
-                  percent: level,
+                  percent: widget.level,
                   circularStrokeCap: CircularStrokeCap.round,
                   center: Icon(
                     Icons.bolt,
                     size: 32.0,
-                    color: Colors.black,
+                    color: isCooling ? Colors.green: Colors.black,
                   ),
-                  progressColor: _getBatteryColor(level), // Warna berubah sesuai level
+                  progressColor: _getBatteryColor(
+                      widget.level), // Warna berubah sesuai level
                   backgroundColor: Colors.grey.shade300,
                 ),
                 SizedBox(height: 16),
@@ -75,6 +114,57 @@ class DashboardPage extends StatelessWidget {
               ],
             ),
           ),
+          SizedBox(height: 16),
+          GestureDetector(
+            onTap: _toggleCooling, // Ubah state saat tombol ditekan
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 300), // Animasi perubahan warna
+              decoration: BoxDecoration(
+                gradient: isCooling
+                    ? null // Jika Cooling, tidak ada gradasi, warna putih dengan border biru
+                    : LinearGradient(
+                        colors: [
+                          Colors.lightGreenAccent,
+                          Colors.blue.shade800,
+                          Colors.black,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                color: isCooling ? Colors.white : null,
+                borderRadius: BorderRadius.circular(20),
+                border: isCooling
+                    ? Border.all(color: Colors.black12, width: 2)
+                    : Border.all(color: Colors.white, width: 2),
+              ),
+              padding: EdgeInsets.all(10),
+              width: double.infinity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Rotating Icon
+                  RotationTransition(
+                    turns:
+                        _controller, // Menggunakan controller untuk animasi rotasi
+                    child: Icon(
+                      Icons.ac_unit_rounded,
+                      color: isCooling ? Colors.black : Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    isCooling ? 'Cooler Active' : 'Cooler',
+                    style: TextStyle(
+                      color: isCooling ? Colors.black : Colors.white,
+                      fontSize: 24,
+                      fontWeight: isCooling ? FontWeight.w600 : FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           SizedBox(height: 16), // Tambahin space biar nggak nabrak yang bawah
           Expanded(
             child: GridView.count(
@@ -83,10 +173,13 @@ class DashboardPage extends StatelessWidget {
               crossAxisSpacing: 16,
               childAspectRatio: 2 / 1.5,
               children: [
-                _buildInfoCard('Amperage', '$amperage mAh', Icons.waves),
-                _buildInfoCard('Battery Health', batteryHealth, Icons.battery_charging_full),
-                _buildInfoCard('Voltage', '$voltage V', Icons.power),
-                _buildInfoCard('Temperature', '$temperature C', Icons.thermostat_outlined),
+                _buildInfoCard(
+                    'Amperage', '${widget.amperage} mAh', Icons.waves),
+                _buildInfoCard('Battery Health', widget.batteryHealth,
+                    Icons.battery_charging_full),
+                _buildInfoCard('Voltage', '${widget.voltage} V', Icons.power),
+                _buildInfoCard('Temperature', '${widget.temperature} C',
+                    Icons.thermostat_outlined),
               ],
             ),
           ),
@@ -95,24 +188,27 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-Color _getBatteryColor(double level) {
-  int red, green;
+  Color _getBatteryColor(double level) {
+    int red, green;
+    int b = 48; // Biru tetap konstan
+    if (isCooling) {
+      red = 0;
+      green = 75;
+      b = 150;
+    } else {
+      if (level > 0.5) {
+        // Transisi dari Hijau ke Kuning
+        red = (48 + (level - 0.5) * 2 * (151 - 48)).toInt();
+        green = 177;
+      } else {
+        // Transisi dari Kuning ke Merah
+        red = 151 + ((0.5 - level) * 2 * (177 - 151)).toInt();
+        green = (177 - (0.5 - level) * 2 * (177 - 48)).toInt();
+      }
+    }
 
-  if (level > 0.5) {
-    // Transisi dari Hijau ke Kuning
-    red = (48 + (level - 0.5) * 2 * (151 - 48)).toInt();
-    green = 177;
-  } else {
-    // Transisi dari Kuning ke Merah
-    red = 151 + ((0.5 - level) * 2 * (177 - 151)).toInt();
-    green = (177 - (0.5 - level) * 2 * (177 - 48)).toInt();
+    return Color.fromARGB(255, red, green, b);
   }
-
-  int b = 48; // Biru tetap konstan
-
-  return Color.fromARGB(255, red, green, b);
-}
-
 
   Widget _buildInfoCard(String title, String value, IconData icon) {
     return Container(
