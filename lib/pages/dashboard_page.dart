@@ -21,32 +21,65 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool isCooling = false; // Status tombol Cooler (Idle atau Cooling)
-  late AnimationController _controller; // Controller untuk animasi rotasi
+  bool isHeating = false; // Status tombol Heater (Idle atau Heating)
+  late AnimationController
+      _coolerController; // Controller untuk animasi rotasi Cooler
+  late AnimationController
+      _heaterController; // Controller untuk animasi "breathing" Heater
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _coolerController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
+
+    _heaterController = AnimationController(
+      duration: const Duration(seconds: 1), // Durasi animasi breathing
+      vsync: this,
+      lowerBound: 0.6, // Ukuran minimum
+      upperBound: 1.0, // Ukuran maksimum
+    )..repeat(reverse: true); // Ulangi animasi secara bolak-balik
   }
 
   @override
   void dispose() {
-    _controller.dispose(); // Hentikan controller saat widget dibuang
+    _coolerController.dispose(); // Hentikan controller saat widget dibuang
+    _heaterController.dispose();
     super.dispose();
   }
 
   void _toggleCooling() {
     setState(() {
-      isCooling = !isCooling;
-      if (isCooling) {
-        _controller.repeat(); // Mulai animasi berputar
+      if (!isCooling) {
+        // Jika cooler aktif, matikan heater
+        isCooling = true;
+        isHeating = false;
+        _coolerController.repeat(); // Mulai animasi berputar
+        _heaterController.stop(); // Hentikan animasi Heater
       } else {
-        _controller.stop(); // Hentikan animasi
+        // Jika cooler sudah aktif, nonaktifkan cooler
+        isCooling = false;
+        _coolerController.stop(); // Hentikan animasi
+      }
+    });
+  }
+
+  void _toggleHeating() {
+    setState(() {
+      if (!isHeating) {
+        // Jika heater aktif, matikan cooler
+        isHeating = true;
+        isCooling = false;
+        _heaterController.repeat(reverse: true); // Mulai animasi Heater
+        _coolerController.stop(); // Hentikan animasi Cooler
+      } else {
+        // Jika heater sudah aktif, nonaktifkan heater
+        isHeating = false;
+        _heaterController.stop();
       }
     });
   }
@@ -72,9 +105,11 @@ class _DashboardPageState extends State<DashboardPage>
                 Text(
                   isCooling
                       ? '${(widget.level * 100).toStringAsFixed(0)}% - Cooling'
-                      : '${(widget.level * 100).toStringAsFixed(0)}% - Idle',
+                      : isHeating
+                          ? '${(widget.level * 100).toStringAsFixed(0)}% - Heating'
+                          : '${(widget.level * 100).toStringAsFixed(0)}% - Idle',
                   style: TextStyle(
-                    color: isCooling ? Colors.blue : Colors.black,
+                    color: isCooling ? Colors.blue : isHeating ? Colors.amber : Colors.black,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -97,7 +132,7 @@ class _DashboardPageState extends State<DashboardPage>
                   center: Icon(
                     Icons.bolt,
                     size: 32.0,
-                    color: isCooling ? Colors.green: Colors.black,
+                    color: isCooling ? Colors.green : isHeating ? Colors.orange : Colors.black,
                   ),
                   progressColor: _getBatteryColor(
                       widget.level), // Warna berubah sesuai level
@@ -115,56 +150,120 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           SizedBox(height: 16),
-          GestureDetector(
-            onTap: _toggleCooling, // Ubah state saat tombol ditekan
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300), // Animasi perubahan warna
-              decoration: BoxDecoration(
-                gradient: isCooling
-                    ? null // Jika Cooling, tidak ada gradasi, warna putih dengan border biru
-                    : LinearGradient(
-                        colors: [
-                          Colors.lightGreenAccent,
-                          Colors.blue.shade800,
-                          Colors.black,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                color: isCooling ? Colors.white : null,
-                borderRadius: BorderRadius.circular(20),
-                border: isCooling
-                    ? Border.all(color: Colors.black12, width: 2)
-                    : Border.all(color: Colors.white, width: 2),
-              ),
-              padding: EdgeInsets.all(10),
-              width: double.infinity,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Rotating Icon
-                  RotationTransition(
-                    turns:
-                        _controller, // Menggunakan controller untuk animasi rotasi
-                    child: Icon(
-                      Icons.ac_unit_rounded,
-                      color: isCooling ? Colors.black : Colors.white,
-                      size: 26,
+          // COOLER and HEATER BUTTONS
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: _toggleCooling, // Ubah state saat tombol ditekan
+                  child: AnimatedContainer(
+                    duration:
+                        Duration(milliseconds: 300), // Animasi perubahan warna
+                    decoration: BoxDecoration(
+                      gradient: isCooling
+                          ? null // Jika Cooling, tidak ada gradasi, warna putih dengan border biru
+                          : LinearGradient(
+                              colors: [
+                                Colors.greenAccent,
+                                Colors.blue.shade800,
+                                Colors.blue.shade600,
+                                Colors.black,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      color: isCooling ? Colors.white : null,
+                      borderRadius: BorderRadius.circular(20),
+                      border: isCooling
+                          ? Border.all(color: Colors.black12, width: 2)
+                          : Border.all(color: Colors.white, width: 2),
+                    ),
+                    padding: EdgeInsets.all(10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Rotating Icon for Cooler
+                        RotationTransition(
+                          turns:
+                              _coolerController, // Menggunakan controller untuk animasi rotasi
+                          child: Icon(
+                            Icons.ac_unit_rounded,
+                            color: isCooling ? Colors.blue.shade200 : Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          isCooling ? 'Cooler' : 'Cooler',
+                          style: TextStyle(
+                            color: isCooling ? Colors.black : Colors.white,
+                            fontSize: 24,
+                            fontWeight:
+                                isCooling ? FontWeight.w600 : FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(width: 8),
-                  Text(
-                    isCooling ? 'Cooler Active' : 'Cooler',
-                    style: TextStyle(
-                      color: isCooling ? Colors.black : Colors.white,
-                      fontSize: 24,
-                      fontWeight: isCooling ? FontWeight.w600 : FontWeight.w700,
+                ),
+              ),
+              SizedBox(width: 16), // Jarak antara dua tombol
+              Expanded(
+                child: GestureDetector(
+                  onTap: _toggleHeating, // Ubah state saat tombol ditekan
+                  child: AnimatedContainer(
+                    duration:
+                        Duration(milliseconds: 300), // Animasi perubahan warna
+                    decoration: BoxDecoration(
+                      gradient: isHeating
+                          ? null // Jika Heating, tidak ada gradasi, warna putih dengan border biru
+                          : LinearGradient(
+                              colors: [
+                                Colors.orange.shade400,
+                                Colors.red.shade700,
+                                Colors.red.shade900,
+                                Colors.yellow,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      color: isHeating ? Colors.white : null,
+                      borderRadius: BorderRadius.circular(20),
+                      border: isHeating
+                          ? Border.all(color: Colors.black12, width: 2)
+                          : Border.all(color: Colors.white, width: 2),
+                    ),
+                    padding: EdgeInsets.all(10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Breathing Icon for Heater
+                        ScaleTransition(
+                          scale: _heaterController, // Menggunakan controller untuk animasi "breathing"
+                          child: Icon(
+                            Icons.wb_sunny_rounded,
+                            color: isHeating ? Colors.orangeAccent : Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          isHeating ? 'Heater' : 'Heater',
+                          style: TextStyle(
+                            color: isHeating ? Colors.black : Colors.white,
+                            fontSize: 24,
+                            fontWeight:
+                                isHeating ? FontWeight.w600 : FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
+          // End of COOLER and HEATER BUTTONS
           SizedBox(height: 16), // Tambahin space biar nggak nabrak yang bawah
           Expanded(
             child: GridView.count(
@@ -189,25 +288,29 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Color _getBatteryColor(double level) {
-    int red, green;
-    int b = 48; // Biru tetap konstan
+    int red = 50;
+    int green = 50;
+    int blue = 50; // Biru tetap konstan
     if (isCooling) {
       red = 0;
       green = 75;
-      b = 150;
+      blue = 150;
+    } else if (isHeating) {
+      red = 200;
+      green = 100;
+      blue = 0;
     } else {
       if (level > 0.5) {
-        // Transisi dari Hijau ke Kuning
-        red = (48 + (level - 0.5) * 2 * (151 - 48)).toInt();
-        green = 177;
+        // Transisi dari hijau ke kuning
+        green = 255;
+        red = (255 * (1.0 - level) * 2.0).toInt();
       } else {
-        // Transisi dari Kuning ke Merah
-        red = 151 + ((0.5 - level) * 2 * (177 - 151)).toInt();
-        green = (177 - (0.5 - level) * 2 * (177 - 48)).toInt();
+        // Transisi dari kuning ke merah
+        red = 255;
+        green = (255 * level * 2.0).toInt();
       }
     }
-
-    return Color.fromARGB(255, red, green, b);
+    return Color.fromARGB(255, red, green, blue);
   }
 
   Widget _buildInfoCard(String title, String value, IconData icon) {
